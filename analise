@@ -1,0 +1,171 @@
+########################Projeto Emaes 1214001_Reinfusao########################
+
+
+####Análises de dados
+
+load("dadosDoente.RData")
+attach(dadosDoente)
+source('fitMeasuresReg.R')
+
+##usar variáveis re-escaladas
+zvol <- scale(vol,scale=T) #padronizada
+zepo <- scale(epo,scale=T) #padronizada
+zfe <- scale(fe,scale=T) #padronizada
+
+#epo
+
+modelo1a <- lm(hmg~zvol,data=dadosDoente)
+modelo2a <- lm(hmg~zvol+zepo)
+modelo3a <- lm(hmg~zvol+zepo+zvol*zepo)
+
+coef1a <- data.table(summary(modelo1a)$coefficients)
+coef2a <- data.table(summary(modelo2a)$coefficients)
+coef3a <- data.table(summary(modelo3a)$coefficients)
+
+anova1a <- anova(modelo1a)
+anova2a <- anova(modelo2a)
+anova3a <- anova(modelo3a)
+fitMeasuresReg(modelo1a)
+fitMeasuresReg(modelo2a)
+fitMeasuresReg(modelo3a)
+
+
+p.1.vol <- summary(modelo1a)$coefficients[2,4] #valor p de vol    1º modelo
+p.2.vol <- summary(modelo2a)$coefficients[2,4] #valor p de vol    2º modelo
+p.2.epo <- summary(modelo2a)$coefficients[3,4] #valor p de epo    2º modelo
+p.3.vol <- summary(modelo3a)$coefficients[2,4] #valor p de vol    3º modelo
+p.3.epo <- summary(modelo3a)$coefficients[3,4] #valor p de epo    3º modelo
+p.3.vol.epo <- summary(modelo3a)$coefficients[4,4] #valor p de vol*epo 3º modelo
+
+#como o valor p da interação entre vol e epo p.3.vol.epo é superior a 0,05, não há efeito moderador: epo é uma variável de previsão de hmg
+
+detach(data)
+
+attach(data)
+
+#fe
+
+modelo1b <- lm(hmg~zvol,data=dadosDoente)
+modelo2b <- lm(hmg~zvol+zfe)
+modelo3b <- lm(hmg~zvol+zfe+zvol*zfe)
+
+summary(modelo1b)
+summary(modelo2b)
+summary(modelo3b)
+
+p.1.vol <- summary(modelo1b)$coefficients[2,4] #valor p de vol 1º modelo
+p.2.vol <- summary(modelo2b)$coefficients[2,4] #valor p de vol 2º modelo
+p.2.fe <- summary(modelo2b)$coefficients[3,4] #valor p de fe    2º modelo
+p.3.vol <- summary(modelo3b)$coefficients[2,4] #valor p de vol 3º modelo
+p.3.fe <- summary(modelo3b)$coefficients[3,4] #valor p de fe    3º modelo
+p.3.vol.fe <- summary(modelo3b)$coefficients[4,4] #valor p de vol*fe 3º modelo
+
+#como o valor p da interação entre vol e fe p.3.vol.fe é superior a 0,05, não há efeito moderador: fe é uma variável de previsão de hmg
+
+coef1b <- data.table(summary(modelo1b)$coefficients)
+coef2b <- data.table(summary(modelo2b)$coefficients)
+coef3b <- data.table(summary(modelo3b)$coefficients)
+anova1b <- anova(modelo1b)
+anova2b <- anova(modelo2b)
+anova3b <- anova(modelo3b)
+fitMeasuresReg(modelo1b)
+fitMeasuresReg(modelo2b)
+fitMeasuresReg(modelo3b)
+
+
+
+
+
+
+####Análises às clínicas
+
+load("datacli.RData")
+library(doBy)
+attach(datacli)
+
+summaryBy(hmg+vol+epo+fe~prot, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+
+#Comparações entre grupos
+
+# i H2: As clinicas que reinfundem mais volume gastam menos Fe nos doentes
+
+summaryBy(fe~top.vol, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+sum(top.vol)
+wilcox.test(fe~top.vol)
+boxplot(fe~top.vol, names=c("Reinfunde menos volume","Reinfunde mais volume"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Comparação do gasto de Ferro entre clínicas")
+
+
+# ii H3: As clinicas que reinfundem mais volume gastam menos EPO nos doentes
+
+summaryBy(epo~top.vol, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+wilcox.test(epo~top.vol)
+boxplot(epo~top.vol, names=c("Reinfunde menos volume","Reinfunde mais volume"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Comparação do gasto de EPO entre clínicas")
+
+
+# iii H4: As clinicas que reinfundem mais volume têm melhores taxas de hemoglobina
+
+summaryBy(hmg~top.vol, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+wilcox.test(hmg~top.vol)
+boxplot(hmg~top.vol, names=c("Reinfunde menos volume","Reinfunde mais volume"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Volume de reinfusão e taxas de hemoglobina entre clínicas")
+
+
+# iv H5: As clinicas que gastam mais EPO, não têm melhores taxas de hemoglobina.
+
+summaryBy(hmg~top.epo, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+sum(top.epo)
+wilcox.test(hmg~top.epo)
+boxplot(hmg~top.epo, names=c("Menos EPO","Mais EPO"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("EPO e taxas de hemoglobina entre clínicas")
+
+
+# v H6: As clinicas que gastam mais Fe, não têm melhores taxas de hemoglobina.
+
+summaryBy(hmg~top.fe, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+sum(top.fe)
+wilcox.test(hmg~top.fe)
+boxplot(hmg~top.fe, names=c("Menos Ferro","Mais Ferro"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Ferro e taxas de hemoglobina entre clínicas")
+
+# vi H7: As clinicas que gastam mais EPO e Fe, não têm melhores taxas de hemoglobina
+
+summaryBy(hmg~top.epo.fe, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+sum(top.epo.fe)
+wilcox.test(hmg~top.epo.fe)
+boxplot(hmg~top.epo.fe, names=c("Menos EPO e Ferro","Mais EPO e Ferro"),
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("EPO, Ferro e taxas de hemoglobina entre clínicas")
+
+
+# viii H8: As clinicas que têm protocolo têm melhores resultados de hemoglobina com menores doses de EPO.
+
+summaryBy((hmg/epo)~prot, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+wilcox.test((hmg/epo)~prot)
+boxplot((hmg/epo)~prot, 
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Hemoglobina/EPO entre clínicas com e sem protocolo")
+
+
+
+summaryBy((hmg/fe)~prot, data=datacli, FUN=c(mean,sd),na.rm=TRUE)
+wilcox.test((hmg/fe)~prot)
+boxplot((hmg/fe)~prot, 
+        pars = list(boxwex = 0.4, staplewex = 0.5, outwex = 0.5),
+        col = "bisque")
+title("Hemoglobina/ferro entre clínicas com e sem protocolo")
+
+detach(datacli)
