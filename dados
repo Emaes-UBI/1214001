@@ -1,0 +1,221 @@
+########################Projeto Emaes 1214001_Reinfusao########################
+
+
+##########Organização do ficheiro de dados para análise##########
+
+##instala??o de pacotes necess?rios
+if("dplyr" %in% rownames(installed.packages()) == FALSE) {install.packages("dplyr")}
+if("DataCombine" %in% rownames(installed.packages()) == FALSE) {install.packages("DataCombine")}
+if("rJava" %in% rownames(installed.packages()) == FALSE) {install.packages("rJava")}
+if("xlsxjars" %in% rownames(installed.packages()) == FALSE) {install.packages("xlsxjars")}
+if("xlsx" %in% rownames(installed.packages()) == FALSE) {install.packages("xlsx")}
+if("XLConnect" %in% rownames(installed.packages()) == FALSE) {install.packages("XLConnect")}
+if("foreign" %in% rownames(installed.packages()) == FALSE) {install.packages("foreign")}
+if("openxlsx" %in% rownames(installed.packages()) == FALSE) {install.packages("openxlsx")}
+if("Hmisc" %in% rownames(installed.packages()) == FALSE) {install.packages("Hmisc")}
+if("devtools" %in% rownames(installed.packages()) == FALSE) {install.packages("devtools")}
+if("Rtools" %in% rownames(installed.packages()) == FALSE) {installr::install.rtools()}
+
+
+#carregar os pacotes necessÃ¡rios
+
+#Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre1.8.0_25') #set environment variable
+#library(rJava)
+#library(xlsxjars)
+#library(xlsx)
+#library(XLConnect)
+library(foreign)
+library(openxlsx) #este pacote, como nÃ£o Ã© baseado em java mas no Rcpp, nÃ£o dÃ¡ problemas de memÃ³ria (http://stackoverflow.com/questions/21937640/handling-java-lang-outofmemoryerror-when-writing-to-excel-from-r - comentÃ¡rio de Richie Cotton)
+#library(Rtools)        
+#library(Hmisc)
+#library(devtools)
+
+##ler o ficheiro Excel
+setwd("D:/Dropbox/_TransferÃªncia/2014-2016/Emaes/1214001 ReinfusÃ£o/AnÃ¡liseDados")
+file <- ("DADOS REINFUSAO r02.xlsx")
+data <- read.xlsx(file, 1) #ler a primeira folha do livro excel
+
+#variÃ¡veis e vetores operacionais
+vars <- names(data) #nomes das variÃ¡veis
+meses <- c(2:12) #folhas restantes do livro
+outputfile <- c("Dados.csv")
+
+for(i in meses) {
+  data2 <- read.xlsx(file, i)
+  data <- merge(data,data2, all.x=TRUE, all.y=TRUE)
+}
+rm(data2)
+data2 <- data #cÃ³pia de seguranÃ§a para apagar quando o cÃ³digo estiver fechado
+#Mudar todos os valores NULL para NA
+
+data <- as.data.frame(lapply(data, function(x){replace(x, x =="NULL",NA)}))
+
+#gravar o ficheiro em csv para ultrapassar o separador decimal errado. nÃ£o fazendo isto hÃ¡ confusÃ£o com as casa decimais.
+write.csv(data,outputfile,row.names=FALSE) 
+
+#ler de novo
+data <- read.csv(outputfile)
+
+###manipulaÃ§Ã£o de variÃ¡veis
+
+#criar labels com base nos nomes presentes no excel original
+labels <- vars
+
+#mudar os nomes das variÃ¡veis para nomes operacionais
+names <- c("ano","mes","cli","sujeito","hmg","ferrit","vol",
+           "epo","fe","prot")
+
+#mudar o nome das vari?veis
+names(data) <- names
+
+#mudar de factor para numeric, variÃ¡veis 6 e 9 (7 e 10, com nova variÃ¡vel ID)
+#for(i in c(7,10)) {data[,i] <- as.numeric(data[,i])}
+
+#variÃ¡vel protocolo como factor
+protocoloLevels <- c(0,1)
+protocoloLabels <- c("Com protocolo","Sem protocolo")
+data$prot <- factor(data$prot,
+                    levels=protocoloLevels, 
+                    labels=protocoloLabels)
+rm(protocoloLevels); rm(protocoloLabels)
+
+#variÃ¡vel mÃªs como factor
+meses <- format(ISOdate(2004,1:12,1),"%B")
+data$mes <- factor(data$mes,
+                   levels=1:12,
+                   labels=meses)
+
+#variÃ¡vel clÃ?nica com factor
+data$cli <- factor(data$cli)
+
+#variÃ¡vel doente como factor
+data$sujeito <- factor(data$sujeito)
+
+
+#gravar ficheiro final
+
+save(data,file="dados.RData")
+write.csv2(data,outputfile,row.names=FALSE) #gravar ficheiro csv completo
+write.xlsx(data,file="D:/Dropbox/_Transferência/2014-2016/Emaes/1214001 Reinfusão/Dados/Dados.xlsx") #usar pacote xlsx
+
+##gravar em formato spss (de http://r4stats.com/examples/data-export/)
+
+#nome e caminho dos ficheiros
+
+wd <- paste(getwd(),"/", sep="") #criar o path
+wd <- gsub("/","\\",wd, fixed=TRUE) #mudar / para \ no caminho
+datafile <- paste(wd,"dados.txt", sep="") #ficheiro com os dados
+codefile <- paste(wd,"sintaxe.sps", sep="") #ficheiro de sintaxe
+
+#labels das variÃ¡veis
+for(i in ncol(data)) {
+  label(data[i]) <- labels[i]
+}
+
+#gravar o ficheiro comem formato longo com 38630 observações
+
+save(data,file="dados.RData") #ficheiro de dados de R
+write.csv2(data,file="Dados.csv",row.names=FALSE) #ficheiro csv
+write.xlsx(data,file="Dados.xlsx") #ficheiro Excel
+
+
+
+###Ficheiro de doentes (ficheiro em formato largo)
+
+
+load("dados.RData")
+attach(data)
+
+summary(data[,c(3,5,7,8,9)])
+
+
+data <- data[,-c(1,6)]
+data$sujeito <- as.numeric(levels(sujeito))[sujeito]
+data$cli <- as.numeric(levels(cli))[cli]
+
+data$prot <- as.numeric(levels(factor(prot, levels=c(1,0))))[prot]
+
+mt <- function(x, ...) { mean(x, na.rm=TRUE) }
+
+data <- data %>%
+  group_by(sujeito,cli) %>%
+  summarise_each(funs(mt))
+
+#variável protocolo como factor
+protocoloLevels <- c(0,1)
+protocoloLabels <- c("Com protocolo","Sem protocolo")
+data$prot <- factor(data$prot,
+                    levels=protocoloLevels, 
+                    labels=protocoloLabels)
+rm(protocoloLevels); rm(protocoloLabels)
+
+
+#variável clínica com factor
+data$cli <- factor(data$cli)
+
+#variável doente como factor
+data$sujeito <- factor(data$sujeito)
+
+data <- data[,-c(3)]
+
+##criar variáveis padronizadas
+
+data$zvol <- scale(vol,scale=T) #padronizada
+data$zepo <- scale(epo,scale=T) #padronizada
+data$zfe <- scale(fe,scale=T) #padronizada
+
+detach(data)
+
+dadosDoente <- data; rm(data)
+
+attach(dadosDoente)
+
+save(dadosDoente,file="dadosDoente.RData")
+write.csv2(dadosDoente,"dadosDoente.csv",row.names=FALSE) #gravar ficheiro csv agregado
+write.xlsx(dadosDoente,"dadosDoente.xlsx")
+
+
+###ficheiro com clínicas como unidade de análise
+
+load("dados.RData")
+attach(data)
+
+q3.vol <- quantile(vol,na.rm=TRUE)[4] #terceiro quartil da variável volume
+#as clínicas acima deste valor são as que mais volume reinfundem.
+q3.epo <- quantile(epo,na.rm=TRUE)[4] #terceiro quartil da variável epo
+#as clínicas acima deste valor são as que mais epo gastam.
+q3.fe <- quantile(fe,na.rm=TRUE)[4] #terceiro quartil da variável fe
+#as clínicas acima deste valor são as que mais epo gastam.
+q3.epo.fe <- quantile(epo*fe,na.rm=TRUE)[4] #terceiro quartil do produtoentre epo e fe
+detach(data)
+
+load("dadosDoente.RData")
+attach(dadosDoente)
+
+datacli <- aggregate(cbind(hmg, vol, epo, fe, prot) ~ cli, dadosDoente, mean) 
+#novo data.frame com as clínicas como unidades de análise
+
+
+detach(dadosDoente)
+attach(datacli)
+
+protocoloLevels <- c(1,2)
+protocoloLabels <- c("Com protocolo","Sem protocolo")
+datacli$prot <- factor(datacli$prot,
+                       levels=protocoloLevels, 
+                       labels=protocoloLabels)
+rm(protocoloLevels); rm(protocoloLabels)
+
+datacli$top.vol <- (vol>=q3.vol)
+datacli$top.epo <- (epo>=q3.epo)
+datacli$top.fe <- (fe>=q3.fe)
+datacli$top.epo.fe <- (epo*fe>=q3.epo.fe)
+
+detach(datacli);attach(datacli)
+
+
+save(datacli,file="DadosClinica.RData")
+write.csv2(data,file="DadosClinica.csv",row.names=FALSE)
+write.xlsx(data,file="DadosClinica.xlsx")
+detach(datacli)
+
