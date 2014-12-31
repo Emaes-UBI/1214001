@@ -1,0 +1,23 @@
+###Informação sobre a regressão
+## adaptado de https://stat.ethz.ch/pipermail/r-sig-ecology/2008-May/000062.html
+fitMeasuresReg <-
+function(lm)
+{
+out <- c(summary(lm)$r.squared, summary(lm)$adj.r.squared, summary(lm)$sigma,
+summary(lm)$fstatistic,pf(summary(lm)$fstatistic[1], summary(lm)$fstatistic[2],
+summary(lm)$fstatistic[3], lower.tail = FALSE))
+names(out) <- c("r.squared","adj.r.squared","sigma","F","df1","df2","p")
+return(out)}
+
+    Status
+    API
+    Training
+    Shop
+    Blog
+    About
+
+    © 2014 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Co
