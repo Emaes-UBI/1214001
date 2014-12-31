@@ -9,15 +9,3 @@ summary(lm)$fstatistic[3], lower.tail = FALSE))
 names(out) <- c("r.squared","adj.r.squared","sigma","F","df1","df2","p")
 return(out)}
 
-    Status
-    API
-    Training
-    Shop
-    Blog
-    About
-
-    © 2014 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Co
