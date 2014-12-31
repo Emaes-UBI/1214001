@@ -19,19 +19,11 @@ if("Rtools" %in% rownames(installed.packages()) == FALSE) {installr::install.rto
 
 #carregar os pacotes necessÃ¡rios
 
-#Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre1.8.0_25') #set environment variable
-#library(rJava)
-#library(xlsxjars)
-#library(xlsx)
-#library(XLConnect)
 library(foreign)
 library(openxlsx) #este pacote, como nÃ£o Ã© baseado em java mas no Rcpp, nÃ£o dÃ¡ problemas de memÃ³ria (http://stackoverflow.com/questions/21937640/handling-java-lang-outofmemoryerror-when-writing-to-excel-from-r - comentÃ¡rio de Richie Cotton)
-#library(Rtools)        
-#library(Hmisc)
-#library(devtools)
 
 ##ler o ficheiro Excel
-setwd("D:/Dropbox/_TransferÃªncia/2014-2016/Emaes/1214001 ReinfusÃ£o/AnÃ¡liseDados")
+
 file <- ("DADOS REINFUSAO r02.xlsx")
 data <- read.xlsx(file, 1) #ler a primeira folha do livro excel
 
@@ -96,7 +88,7 @@ data$sujeito <- factor(data$sujeito)
 
 save(data,file="dados.RData")
 write.csv2(data,outputfile,row.names=FALSE) #gravar ficheiro csv completo
-write.xlsx(data,file="D:/Dropbox/_Transferência/2014-2016/Emaes/1214001 Reinfusão/Dados/Dados.xlsx") #usar pacote xlsx
+write.xlsx(data,file="Dados.xlsx") #usar pacote xlsx
 
 ##gravar em formato spss (de http://r4stats.com/examples/data-export/)
 
